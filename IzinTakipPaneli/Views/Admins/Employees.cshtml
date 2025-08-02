@@ -2,7 +2,9 @@
 @{
     ViewData["Title"] = "Çalışanlar";
     var depts = (IEnumerable<IzinTakipPaneli.Models.Department>)ViewBag.Departments;
+    var selectedDept = ViewContext.HttpContext.Request.Query["deptId"].ToString();
 }
+
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -13,11 +15,13 @@
 <form method="get" class="row g-2 mb-3">
     <div class="col-auto">
         <select name="deptId" class="form-select">
-            <option value="">Tüm Departmanlar</option>
-            @foreach (var d in depts)
-            {
-                    <option value="@d.DepartmentID">@d.DepartmentName</option>
-            }
+            <option value="" selected="@(string.IsNullOrEmpty(selectedDept) ? "selected" : null)">Tüm Departmanlar</option>
+                    @foreach (var d in depts)
+                    {
+                    <option value="@d.DepartmentID" selected="@(selectedDept == d.DepartmentID.ToString() ? "selected" : null)">
+                            @d.DepartmentName
+                    </option>
+                    }
         </select>
     </div>
     <div class="col-auto">
@@ -226,28 +230,36 @@
                 },
                 body: $(this).serialize()
             })
-                .then(r => r.json())
-                .then(j => {
-                    if (j.ok) {
-                        Swal.fire({ icon: 'success', title: 'Başarılı', text: 'Yeni çalışan eklendi.' });
+            .then(r => r.json())
+            .then(j => {
+                if (j.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı',
+                        text: 'Yeni çalışan eklendi.',
+                        confirmButtonText: 'Tamam',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    }).then(() => {
                         $('#addEmpModal').modal('hide');
                         $('#empForm')[0].reset();
                         $('#userMsg').text('').removeClass('text-danger text-success');
                         usernameAvailable = false;
-                        setTimeout(() => location.reload(true), 400);
-                    } else {
-                        Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
-                    }
-                })
-                .catch(() => {
-                    Swal.fire('Hata', 'Sunucuya bağlanılamadı.', 'error');
-                })
-                .finally(() => {
-                    updateSubmitState();
-                });
+                        location.reload(true);
+                    });
+                } else {
+                    Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
+                }
+            })
+            .catch(() => {
+                Swal.fire('Hata', 'Sunucuya bağlanılamadı.', 'error');
+            })
+            .finally(() => {
+                updateSubmitState();
+            });
         });
 
-        /* DataTable initializasyonu (isteğe göre yukarı taşı) */
+        /* DataTable  */
         $('#empTable').DataTable({
             pageLength: 10,
             lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, 'Hepsi']],
@@ -270,6 +282,7 @@
             e.preventDefault();
             const id = $(this).data('id'),
                 name = $(this).data('name');
+            const token = $('input[name="__RequestVerificationToken"]').first().val();
 
             Swal.fire({
                 title: name,
@@ -281,13 +294,39 @@
                 cancelButtonText: 'İptal'
             }).then(r => {
                 if (r.isConfirmed) {
-                    $('<form>', { method: 'post', action: '@Url.Action("DeleteEmployee")' })
-                        .append($('<input>', { type: 'hidden', name: 'id', value: id }))
-                        .appendTo('body')
-                        .submit();
+                    fetch('@Url.Action("DeleteEmployee")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams({ id: id })
+                    })
+                    .then(res => res.json())
+                    .then(resJson => {
+                        if (resJson.ok === false) {
+                            Swal.fire('Hata', resJson.message || 'Silme başarısız oldu.', 'error');
+                        } else {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Başarılı',
+                                text: 'Kullanıcı başarıyla silindi.',
+                                confirmButtonText: 'Tamam',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false
+                            }).then(() => {
+                                location.reload(true);
+                            });
+                        }
+                    })
+                    .catch(() => {
+                        Swal.fire('Hata', 'Silme işlemi sırasında hata oluştu.', 'error');
+                    });
                 }
             });
         });
+
     });
     </script>
 
