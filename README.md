@@ -28,13 +28,13 @@ A lightweight panel for employees to request leaves, monitor annual leave balanc
 
 2. **Prepare configuration:**  
    ```powershell
-   copy-item appsettings.example.json appsettings.json
+   cp IzinTakipPaneli/appsettings.example.json IzinTakipPaneli/appsettings.json
    ```
    Edit `appsettings.json` and adjust the connection string:
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost\SQLEXPRESS;Database=LeaveManagementDB;Trusted_Connection=True;"
+       "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB;Trusted_Connection=True;"
      }
    }
    ```
@@ -63,7 +63,7 @@ A lightweight panel for employees to request leaves, monitor annual leave balanc
 Using SQL Server Management Studio or another SQL client:
 ```sql
 RESTORE DATABASE LeaveManagementDB_Test
-FROM DISK = 'C:\path\to\IzinTakipTest.bak'
+FROM DISK = 'C:\path\to\LeaveManagementDB.bak'
 WITH MOVE 'LeaveManagementDB_Data' TO 'C:\SQLData\LeaveManagementDB_Test.mdf',
      MOVE 'LeaveManagementDB_Log' TO 'C:\SQLData\LeaveManagementDB_Test_log.ldf',
      REPLACE;
@@ -72,7 +72,7 @@ Then update the connection string:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost\SQLEXPRESS;Database=LeaveManagementDB_Test;Trusted_Connection=True;"
+    "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB_Test;Trusted_Connection=True;"
   }
 }
 ```
@@ -106,13 +106,13 @@ Then update the connection string:
 
 2. **Konfigürasyonu hazırla:**  
    ```powershell
-   copy-item appsettings.example.json appsettings.json
+   cp IzinTakipPaneli/appsettings.example.json IzinTakipPaneli/appsettings.json
    ```
    `appsettings.json` dosyasını düzenleyin:
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost\SQLEXPRESS;Database=LeaveManagementDB;Trusted_Connection=True;"
+       "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB;Trusted_Connection=True;"
      }
    }
    ```
@@ -140,7 +140,7 @@ Then update the connection string:
 #### Geri Yükleme
 ```sql
 RESTORE DATABASE LeaveManagementDB_Test
-FROM DISK = 'C:\path\to\IzinTakipTest.bak'
+FROM DISK = 'C:\path\to\LeaveManagementDB.bak'
 WITH MOVE 'LeaveManagementDB_Data' TO 'C:\SQLData\LeaveManagementDB_Test.mdf',
      MOVE 'LeaveManagementDB_Log' TO 'C:\SQLData\LeaveManagementDB_Test_log.ldf',
      REPLACE;
@@ -149,7 +149,7 @@ Ardından bağlantı dizesini güncelleyin:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost\SQLEXPRESS;Database=LeaveManagementDB_Test;Trusted_Connection=True;"
+    "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB_Test;Trusted_Connection=True;"
   }
 }
 ```
