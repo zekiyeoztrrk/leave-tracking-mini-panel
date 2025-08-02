@@ -1,4 +1,4 @@
-﻿using IzinTakipPaneli.Models;
+using IzinTakipPaneli.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -109,13 +109,25 @@ namespace IzinTakipPaneli.Controllers
         }
 
         /* Çalışan pasifleştir */
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteEmployee(int id)
         {
             var emp = await _db.Employees.FindAsync(id);
-            if (emp is not null) { emp.IsActive = false; await _db.SaveChangesAsync(); }
+            if (emp is not null)
+            {
+                emp.IsActive = false;
+                await _db.SaveChangesAsync();
+            }
+
+            // AJAX isteği ise JSON dön, değilse redirect et
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { ok = true });
+            }
+
             return RedirectToAction("Employees");
         }
+
 
         /* DEPARTMANLAR */
         public async Task<IActionResult> Departments()
