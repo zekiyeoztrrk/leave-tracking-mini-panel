@@ -1,9 +1,11 @@
-﻿@{
+@{
     ViewData["Title"] = "İzinler";
     var depts = (IEnumerable<IzinTakipPaneli.Models.Department>)ViewBag.Departments;
 }
 <link rel="stylesheet"
       href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <h4 class="mb-3">İzinler</h4>
 
@@ -123,7 +125,14 @@
     <script>
         $(function () {
 
-            /* tablo başlangıç, izin listesi*/
+            // overlay/ backdrop temizleyici (Bootstrap + Swal kalanı varsa)
+            function cleanupOverlays() {
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                document.querySelectorAll('.swal2-container').forEach(el => el.remove());
+                document.body.classList.remove('modal-open');
+            }
+
+            /* tablo başlangıç izin listesi */
             const table = $('#leaveTable').DataTable({
                 ajax: {
                     url: '@Url.Action("LeavesData")',
@@ -140,9 +149,9 @@
                 pageLength: 10,
                 lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, 'Hepsi']],
                 language: {
-                    lengthMenu:  '_MENU_ kayıt',
-                    search:      'Ara:',
-                    info:        '_TOTAL_ kayıttan _START_-_END_'
+                    lengthMenu:'_MENU_ kayıt',
+                    search:'Ara:',
+                    info: '_TOTAL_ kayıttan _START_-_END_'
                 },
                 dom: 'Bfrtip',
                 buttons: [
@@ -162,9 +171,8 @@
                 let from = $('#fltFrom').val();
                 let to   = $('#fltTo').val();
 
-                // Tek tarih girildiyse diğerine kopyala
                 if (from && !to) to = from;
-                if (to   && !from) from = to;
+                if (to && !from) from = to;
 
                 const u = '@Url.Action("LeavesData")'
                         + '?name='   + encodeURIComponent($('#fltName').val())
@@ -176,58 +184,131 @@
             });
 
             /* yıllık limit modalı değer kaydet */
-            $('#limitForm').submit(function (e) {
+            $('#limitForm').submit(async function (e) {
                 e.preventDefault();
                 const btn = $(this).find('button').prop('disabled', true);
+                const body = new URLSearchParams(new FormData(this));
+                try {
+                    const res = await fetch($(this).attr('action'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: body.toString(),
+                        credentials: 'same-origin'
+                    });
 
-                fetch('@Url.Action("SetAnnualLimit")', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: $(this).serialize()
-                })
-                .then(() => $('#limitModal').modal('hide'))
-                .finally(() => btn.prop('disabled', false));
+                    if (res.redirected) throw new Error('Oturum yönlendirmesi, tekrar giriş gerekebilir.');
+                    if (!res.ok) {
+                        const text = await res.text();
+                        throw new Error('Sunucudan beklenmeyen yanıt: ' + text);
+                    }
+
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı',
+                        text: 'Yıllık izin limiti güncellendi.',
+                        confirmButtonText: 'Tamam',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    });
+
+                    cleanupOverlays();
+
+                    const limitModalEl = document.getElementById('limitModal');
+                    const limitModal = bootstrap.Modal.getInstance(limitModalEl) || new bootstrap.Modal(limitModalEl);
+                    limitModal.hide();
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        text: 'Yıllık izin limiti güncellenemedi. ' + err.message,
+                        confirmButtonText: 'Tamam'
+                    });
+                    console.error('SetAnnualLimit error:', err);
+                    cleanupOverlays();
+                } finally {
+                    btn.prop('disabled', false);
+                }
             });
 
-            /* yeni izin türü */
-            // Girilen metni Title-Case’e çevir; butonu aktif et
+            // limit modal kapanınca sıfırla
+            $('#limitModal').on('hidden.bs.modal', () => {
+                $('#limitForm')[0].reset();
+            });
+
+            /* yeni izin türü input kontrolü */
             $('#typeName').on('input', function () {
                 this.value = this.value.toLowerCase()
                                         .replace(/(?:^|\s)\S/g, c => c.toUpperCase());
                 $('#typeForm button').prop('disabled', !this.value.trim());
+                $('#typeMsg').text('').removeClass('text-danger');
             });
 
-            // Modal kapanınca formu sıfırla
             $('#typeModal').on('hidden.bs.modal', () => {
                 $('#typeForm')[0].reset();
-                $('#typeMsg').text('');
+                $('#typeMsg').text('').removeClass('text-danger');
                 $('#typeForm button').prop('disabled', true);
             });
 
-            // Kaydet 
-            $('#typeForm').submit(function (e) {
+            /* yeni izin türü */
+            $('#typeForm').submit(async function (e) {
                 e.preventDefault();
                 const btn = $(this).find('button').prop('disabled', true);
+                const body = new URLSearchParams(new FormData(this));
+                const actionUrl = $(this).attr('action');
 
-                fetch('@Url.Action("AddLeaveType")', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: $(this).serialize()
-                })
-                .then(r => r.json())
-                .then(j => {
-                    if (j.ok) {
-                        $('#typeModal').modal('hide');
-                        table.ajax.reload(null, false); // tabloyu yenile
+                try {
+                    const res = await fetch(actionUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: body.toString(),
+                        credentials: 'same-origin'
+                    });
+
+                    if (res.redirected) throw new Error('Oturum yönlendirmesi oldu.');
+                    if (!res.ok) {
+                        const text = await res.text();
+                        throw new Error('HTTP ' + res.status + ' - ' + text);
+                    }
+
+                    let j;
+                    const contentType = res.headers.get('Content-Type') || '';
+                    if (contentType.includes('application/json')) {
+                        j = await res.json();
                     } else {
-                        $('#typeMsg').text(j.message).addClass('text-danger');
+                        throw new Error('Beklenen JSON dönmedi.');
+                    }
+
+                    if (j.ok) {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı',
+                            text: 'Yeni izin türü eklendi.',
+                            confirmButtonText: 'Tamam',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false
+                        });
+
+                        cleanupOverlays();
+
+                        const typeModalEl = document.getElementById('typeModal');
+                        const typeModal = bootstrap.Modal.getInstance(typeModalEl) || new bootstrap.Modal(typeModalEl);
+                        typeModal.hide();
+
+                        table.ajax.reload(null, false);
+
+                        $('#typeMsg').text('').removeClass('text-danger');
+                        $('#typeForm')[0].reset();
+                        $('#typeForm button').prop('disabled', true);
+                    } else {
+                        $('#typeMsg').text(j.message || 'Bir hata oluştu.').addClass('text-danger');
                         btn.prop('disabled', false);
                     }
-                })
-                .catch(() => {
-                    $('#typeMsg').text('Hata oluştu.').addClass('text-danger');
+                } catch (err) {
+                    $('#typeMsg').text('Hata: ' + err.message).addClass('text-danger');
                     btn.prop('disabled', false);
-                });
+                    console.error('AddLeaveType error:', err);
+                    cleanupOverlays();
+                }
             });
 
         });
