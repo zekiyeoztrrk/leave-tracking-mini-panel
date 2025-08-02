@@ -1,10 +1,11 @@
-﻿@model IEnumerable<dynamic>
+@model IEnumerable<dynamic>
 @{
     ViewData["Title"] = "Çalışanlar";
     var depts = (IEnumerable<IzinTakipPaneli.Models.Department>)ViewBag.Departments;
 }
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <h4 class="mb-3">Çalışanlar</h4>
@@ -83,7 +84,7 @@
 
                     <div class="mb-2">
                         <label class="form-label">Departman</label>
-                        <select name="departmentId" class="form-select" required>
+                        <select id="departmentId" name="departmentId" class="form-select" required>
                             <option value="" disabled selected>Seçiniz..</option>
                             @foreach (var d in depts)
                             {
@@ -94,7 +95,7 @@
 
                     <div class="mb-2">
                         <label class="form-label">Rol</label>
-                        <select name="userRole" class="form-select" required>
+                        <select id="userRole" name="userRole" class="form-select" required>
                             <option value="" disabled selected>Seçiniz..</option>
                             <option value="admin">admin</option>
                             <option value="user">user</option>
@@ -113,7 +114,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary" type="submit" disabled>Kaydet</button>
+                    <button id="submitBtn" class="btn btn-primary" type="submit" disabled>Kaydet</button>
                 </div>
             </form>
         </div>
@@ -121,140 +122,173 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+        <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
     <script>
-        $(function () {
+    $(function () {
+        let usernameAvailable = false;
+        let timer;
 
-            /* Çalışan tablosunu başlat ── */
-            $('#empTable').DataTable({
-                pageLength: 10,
-                lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, 'Hepsi']],
-                language: {
-                    lengthMenu: '_MENU_ kayıt göster',
-                    search: 'Ara:',
-                    info: '_TOTAL_ kayıttan _START_-_END_'
+        function updateSubmitState() {
+            const fullNameVal = $('#fullName').val();
+            const deptVal = $('#departmentId').val();
+            const roleVal = $('#userRole').val();
+            const usernameVal = $('#username').val();
+            const btn = $('#submitBtn');
+
+            const allFilled = fullNameVal && deptVal && roleVal && usernameVal;
+            if (allFilled && usernameAvailable) {
+                btn.prop('disabled', false);
+            } else {
+                btn.prop('disabled', true);
+            }
+        }
+
+        /* input / change eventleri */
+        $('#fullName').on('input', function () {
+            this.value = this.value
+                .toLowerCase()
+                .replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+            updateSubmitState();
+        });
+
+        $('#departmentId, #userRole').on('change', updateSubmitState);
+
+        $('#username').on('input', function () {
+            // normalize: sadece İngilizce küçük harf, rakam, . ve _
+            this.value = this.value
+                .toLowerCase()
+                .replace(/[^a-z0-9._]/g, '');
+
+            const v = this.value;
+            const info = $('#userMsg');
+
+            clearTimeout(timer);
+            if (!v) {
+                info.text('');
+                usernameAvailable = false;
+                updateSubmitState();
+                return;
+            }
+
+            timer = setTimeout(() => {
+                fetch('@Url.Action("CheckUsername")?username=' + encodeURIComponent(v))
+                    .then(r => r.json())
+                    .then(j => {
+                        if (j.exists) {
+                            info.text('Bu kullanıcı adı alınmış.')
+                                .removeClass('text-success')
+                                .addClass('text-danger');
+                            usernameAvailable = false;
+                        } else {
+                            info.text('Kullanılabilir.')
+                                .removeClass('text-danger')
+                                .addClass('text-success');
+                            usernameAvailable = true;
+                        }
+                        updateSubmitState();
+                    })
+                    .catch(() => {
+                        info.text('Kontrol yapılamadı.').addClass('text-warning');
+                        usernameAvailable = false;
+                        updateSubmitState();
+                    });
+            }, 400);
+        });
+
+        /* başlangıçta veya modal reset sonrası */
+        $('#addEmpModal').on('hidden.bs.modal', () => {
+            $('#empForm')[0].reset();
+            $('#userMsg').text('').removeClass('text-danger text-success');
+            usernameAvailable = false;
+            updateSubmitState();
+        });
+
+        /* form submit */
+        $('#empForm').submit(function (e) {
+            e.preventDefault();
+            $('#submitBtn').prop('disabled', true);
+            const token = $('input[name="__RequestVerificationToken"]').val();
+
+            fetch('@Url.Action("AddEmployee")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
                 },
-                dom: 'Bfrtip',
-                buttons: [
-                    'pageLength',
-                    { extend: 'excel', className: 'btn btn-secondary btn-sm' },
-                    { extend: 'pdf',   className: 'btn btn-secondary btn-sm', exportOptions: { columns: [1, 2, 3, 4, 5] } },
-                    { extend: 'print', className: 'btn btn-secondary btn-sm' }
-                ]
-            });
-
-            /* Sil butonu: SweetAlert onayı + POST formu */
-            $(document).on('click', '.btn-delete', function (e) {
-                e.preventDefault();
-                const id   = $(this).data('id'),
-                        name = $(this).data('name');
-
-                Swal.fire({
-                    title: name,
-                    text: 'Silmek istiyor musunuz?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    confirmButtonText: 'Evet, sil',
-                    cancelButtonText: 'İptal'
-                }).then(r => {
-                    if (r.isConfirmed) {
-                        $('<form>', { method: 'post', action: '@Url.Action("DeleteEmployee")' })
-                            .append($('<input>', { type: 'hidden', name: 'id', value: id }))
-                            .appendTo('body')
-                            .submit();
-                    }
-                });
-            });
-
-            /* Modal kapatıldığında formu sıfırla */
-            $('#addEmpModal').on('hidden.bs.modal', () => {
-                $('#empForm')[0].reset();
-                $('#userMsg').text('');
-                $('#empForm button[type=submit]').prop('disabled', true);
-            });
-
-            /* Ad-Soyad kutusunu anında titlecase çevir ── */
-            $('#fullName').on('input', function () {
-                this.value = this.value
-                                .toLowerCase()
-                                .replace(/(?:^|\s)\S/g, c => c.toUpperCase());
-            });
-
-            /* Kullanıcı adı filtre + sunucu tarafı eşsizlik kontrolü */
-            let timer;
-            $('#username').on('input', function () {
-                this.value = this.value
-                                .toLowerCase()
-                                .replace(/[^\x00-\x7F]/g, '')   // Türkçe karakterleri sil
-                                .replace(/\s+/g, '');          // boşluk kaldır
-                clearTimeout(timer);
-
-                const v   = this.value,
-                        info = $('#userMsg'),
-                        btn  = $('#empForm button[type=submit]');
-
-                if (!v) { info.text(''); btn.prop('disabled', true); return; }
-
-                timer = setTimeout(() => {
-                    fetch('@Url.Action("CheckUsername")?username=' + encodeURIComponent(v))
-                        .then(r => r.json())
-                        .then(j => {
-                            if (j.exists) {
-                                info.text('Bu kullanıcı adı alınmış.')
-                                    .addClass('text-danger')
-                                    .removeClass('text-success');
-                                btn.prop('disabled', true);
-                            } else {
-                                info.text('Kullanılabilir.')
-                                    .addClass('text-success')
-                                    .removeClass('text-danger');
-                                btn.prop('disabled', false);
-                            }
-                        });
-                }, 400);
-            });
-
-            /* Yeni çalışan ekle: formu AJAX ile gönder */
-            $('#empForm').submit(function (e) {
-                e.preventDefault();
-                const btn = $(this).find('button').prop('disabled', true);
-
-                fetch('@Url.Action("AddEmployee")', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: $(this).serialize()
-                })
+                body: $(this).serialize()
+            })
                 .then(r => r.json())
                 .then(j => {
                     if (j.ok) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Başarılı',
-                            text: 'Yeni çalışan eklendi.'
-                        });
+                        Swal.fire({ icon: 'success', title: 'Başarılı', text: 'Yeni çalışan eklendi.' });
                         $('#addEmpModal').modal('hide');
-                        $('#addEmpModal')[0].reset();
-                        $('#addEmpModal').text('').removeClass('text-danger text-success');
-                        setTimeout(() => location.reload(), 400);
+                        $('#empForm')[0].reset();
+                        $('#userMsg').text('').removeClass('text-danger text-success');
+                        usernameAvailable = false;
+                        setTimeout(() => location.reload(true), 400);
                     } else {
                         Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
                     }
                 })
-                .finally(() => btn.prop('disabled', false));
-            });
-
+                .catch(() => {
+                    Swal.fire('Hata', 'Sunucuya bağlanılamadı.', 'error');
+                })
+                .finally(() => {
+                    updateSubmitState();
+                });
         });
+
+        /* DataTable initializasyonu (isteğe göre yukarı taşı) */
+        $('#empTable').DataTable({
+            pageLength: 10,
+            lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, 'Hepsi']],
+            language: {
+                lengthMenu: '_MENU_ kayıt göster',
+                search: 'Ara:',
+                info: '_TOTAL_ kayıttan _START_-_END_'
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                'pageLength',
+                { extend: 'excel', className: 'btn btn-secondary btn-sm' },
+                { extend: 'pdf', className: 'btn btn-secondary btn-sm', exportOptions: { columns: [1, 2, 3, 4, 5] } },
+                { extend: 'print', className: 'btn btn-secondary btn-sm' }
+            ]
+        });
+
+        /* silme işlemi */
+        $(document).on('click', '.btn-delete', function (e) {
+            e.preventDefault();
+            const id = $(this).data('id'),
+                name = $(this).data('name');
+
+            Swal.fire({
+                title: name,
+                text: 'Silmek istiyor musunuz?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Evet, sil',
+                cancelButtonText: 'İptal'
+            }).then(r => {
+                if (r.isConfirmed) {
+                    $('<form>', { method: 'post', action: '@Url.Action("DeleteEmployee")' })
+                        .append($('<input>', { type: 'hidden', name: 'id', value: id }))
+                        .appendTo('body')
+                        .submit();
+                }
+            });
+        });
+    });
     </script>
+
 }
-
-
