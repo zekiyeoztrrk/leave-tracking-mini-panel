@@ -86,7 +86,9 @@
             $(document).on('click', '.btn-del', e => {
                 e.preventDefault();
                 const id = $(e.currentTarget).data('id'),
-                        name = $(e.currentTarget).data('name');
+                      name = $(e.currentTarget).data('name');
+                // antiforgery token'ı formdan al
+                const token = $('input[name="__RequestVerificationToken"]').first().val();
 
                 Swal.fire({
                     title: name,
@@ -98,10 +100,38 @@
                     cancelButtonText: 'İptal'
                 }).then(r => {
                     if (r.isConfirmed) {
-                        $('<form>', { method: 'post', action: '@Url.Action("DeleteDept")' })
-                            .append($('<input>', { type: 'hidden', name: 'id', value: id }))
-                            .appendTo('body')
-                            .submit();
+                        fetch('@Url.Action("DeleteDept")', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'RequestVerificationToken': token,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: new URLSearchParams({ id: id }).toString()
+                        })
+                        .then(res => {
+                            if (res.redirected || res.ok) {
+                                // başarılı
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Başarılı',
+                                    text: 'Departman silindi.',
+                                    confirmButtonText: 'Tamam',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                return res.text().then(t => {
+                                    throw new Error(t || 'Silme başarısız oldu.');
+                                });
+                            }
+                        })
+                        .catch(err => {
+                            Swal.fire('Hata', 'Silme işlemi başarısız oldu.'); 
+                            console.error('DeleteDept error:', err);
+                        });
                     }
                 });
             });
