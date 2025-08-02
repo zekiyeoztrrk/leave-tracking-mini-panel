@@ -1,0 +1,449 @@
+﻿@{
+    ViewData["Title"] = "Admin Paneli • Genel Durum";
+    var depts = (IEnumerable<IzinTakipPaneli.Models.Department>)ViewBag.Departments;
+}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" />
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+
+<h3 class="fw-semibold mb-4">Genel Durum</h3>
+
+<!-- BUGÜN İZİNLİLER -->
+<div class="card shadow-sm mb-3">
+  <div class="card-header fw-semibold">Bugün İzinli Çalışanlar</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table id="todayTable" class="table table-sm table-striped align-middle mb-0 w-100">
+        <thead class="small">
+          <tr>
+            <th>Ad Soyad</th>
+            <th>Departman</th>
+            <th>İzin Türü</th>
+            <th>Dönüş Tarihi</th>
+            <th>Kalan İzin (Gün)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ALT SATIR -->
+<div class="row g-3">
+  <!-- Grafik -->
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">En Çok İzin Alan 5 Kişi</div>
+      <div class="card-body p-2">
+        <canvas id="topChart" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hızlı İşlemler -->
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Hızlı İşlemler</div>
+      <div class="card-body d-flex flex-column gap-2">
+        <button class="btn btn-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#quickEmpModal">
+          <i class="bi bi-person-plus me-1"></i> Yeni Çalışan
+        </button>
+
+        <button class="btn btn-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#quickDeptModal">
+          <i class="bi bi-building-add me-1"></i> Yeni Departman
+        </button>
+
+        <button class="btn btn-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#typeModal">
+          <i class="bi bi-plus-circle me-1"></i> Yeni İzin Türü
+        </button>
+
+        <button class="btn btn-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#limitModal">
+          <i class="bi bi-gear me-1"></i> Yıllık İzin Gününü Değiştir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALLAR -->
+
+<!-- Yeni Çalışan -->
+<div class="modal fade" id="quickEmpModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header header-blue">
+        <h5 class="modal-title">Yeni Çalışan</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form id="quickEmpForm" asp-action="AddEmployee" method="post">
+                @Html.AntiForgeryToken()
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Ad Soyad</label>
+            <input id="quickFullName" name="fullName" class="form-control" required>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Departman</label>
+            <select name="departmentId" class="form-select" required>
+              <option value="" disabled selected>Seçiniz..</option>
+                            @foreach (var d in depts)
+                            {
+                      <option value="@d.DepartmentID">@d.DepartmentName</option>
+                            }
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Rol</label>
+            <select name="userRole" class="form-select" required>
+              <option value="" disabled selected>Seçiniz..</option>
+              <option value="admin">admin</option>
+              <option value="user">user</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Kullanıcı Adı</label>
+            <input id="quickUsername" name="username" class="form-control" required>
+            <div id="quickUserMsg" class="small mt-1"></div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Şifre</label>
+            <input name="password" type="password" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="quickEmpSaveBtn" class="btn btn-primary" type="submit" disabled>Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Yeni Departman -->
+<div class="modal fade" id="quickDeptModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header header-blue">
+        <h5 class="modal-title">Yeni Departman</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="quickDeptForm" asp-action="AddDept" method="post">
+                @Html.AntiForgeryToken()
+        <div class="modal-body small">
+          <label class="form-label">Departman Adı</label>
+          <input id="quickDeptName" name="name" class="form-control" required>
+          <div id="quickDeptMsg" class="small mt-1"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="quickDeptSaveBtn" class="btn btn-primary" type="submit" disabled>Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Yeni İzin Türü -->
+<div class="modal fade" id="typeModal" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog">
+  <div class="modal-content">
+     <div class="modal-header header-blue">
+        <h5 class="modal-title">Yeni İzin Türü</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+     </div>
+     <form id="typeForm" asp-action="AddLeaveType" method="post">
+                @Html.AntiForgeryToken()
+        <div class="modal-body small">
+          <label class="form-label">İzin Türü</label>
+          <input id="typeName" name="name" class="form-control" required>
+          <div id="typeMsg" class="small mt-1"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="typeSaveBtn" class="btn btn-primary" type="submit" disabled>Kaydet</button>
+        </div>
+     </form>
+  </div>
+ </div>
+</div>
+
+<!-- Yıllık Limit -->
+<div class="modal fade" id="limitModal" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog">
+  <div class="modal-content">
+     <div class="modal-header header-blue">
+        <h5 class="modal-title">Yıllık İzin Gününü Ayarla</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+     </div>
+     <form id="limitForm" asp-action="SetAnnualLimit" method="post">
+                @Html.AntiForgeryToken()
+        <div class="modal-body">
+          <input name="days" type="number" min="1" class="form-control" required>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Kaydet</button>
+        </div>
+     </form>
+  </div>
+ </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <script>
+        const csrf = $('input[name="__RequestVerificationToken"]').first().val();
+
+        /* Bugün İzinliler tablosu */
+        const todayTbl = $('#todayTable').DataTable({
+            ajax: { url: '@Url.Action("TodayLeavesData")', dataSrc: '' },
+            columns: [
+                { data: 'employee' },
+                { data: 'dept' },
+                { data: 'type' },
+                { data: 'returnDate' },
+                { data: 'remaining' }
+            ],
+            paging: false,
+            searching: false,
+            info: false,
+            scrollX: true,
+            language: { emptyTable: 'Bugün izinli çalışan yok.' }
+        });
+
+        /* En Çok İzin Alan 5 Kişi */
+        fetch('@Url.Action("TopLeaveStats")')
+            .then(r => r.json())
+            .then(j => {
+                new Chart(document.getElementById('topChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: j.labels,
+                        datasets: [{
+                            data: j.days,
+                            backgroundColor: [
+                                '#003366', '#1b4f7a',
+                                '#2e648c', '#41799e',
+                                '#548db0'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } },
+                        scales: { x: { beginAtZero: true, grid: { display: false } } }
+                    }
+                });
+            });
+
+        /* Genel AJAX form yardımcı */
+        function ajaxForm($form, onSuccess) {
+            const btn = $form.find('button[type=submit]');
+            btn.prop('disabled', true);
+            fetch($form.attr('action'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': csrf
+                },
+                body: $form.serialize()
+            })
+                .then(r => r.json ? r.json() : r)
+                .then(res => {
+                    if (res.ok === false) {
+                        Swal.fire('Hata', res.message || 'Bir hata oluştu', 'error');
+                    } else {
+                        onSuccess?.(res);
+                    }
+                })
+                .catch(() => Swal.fire('Hata', 'İşlem başarısız oldu.', 'error'))
+                .finally(() => btn.prop('disabled', false));
+        }
+
+        /* Yeni Çalışan logic */
+        $('#quickEmpModal select[name=departmentId], #quickEmpModal select[name=userRole], #quickEmpModal input[name=password]')
+            .on('change input', function () {
+                validateQuickEmp();
+            });
+
+        // modal açıldığında bir kez kontrol et
+        $('#quickEmpModal').on('shown.bs.modal', () => {
+            validateQuickEmp();
+        });
+
+        $('#quickFullName').on('input', function () {
+            this.value = this.value
+                .toLowerCase()
+                .replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+            validateQuickEmp();
+        });
+
+        let quickUserTimer;
+        $('#quickUsername').on('input', function () {
+            this.value = this.value
+                .toLowerCase()
+                .replace(/[^\x00-\x7F]/g, '')
+                .replace(/\s+/g, '');
+            $('#quickUserMsg').removeClass('text-danger text-success').text('');
+            validateQuickEmp();
+
+            clearTimeout(quickUserTimer);
+            const val = this.value;
+            if (!val) {
+                $('#quickEmpSaveBtn').prop('disabled', true);
+                return;
+            }
+
+            quickUserTimer = setTimeout(() => {
+                fetch('@Url.Action("CheckUsername")?username=' + encodeURIComponent(val))
+                    .then(r => r.json())
+                    .then(j => {
+                        if (j.exists) {
+                            $('#quickUserMsg').text('Bu kullanıcı adı alınmış.')
+                                .addClass('text-danger').removeClass('text-success');
+                        } else {
+                            $('#quickUserMsg').text('Kullanılabilir.')
+                                .addClass('text-success').removeClass('text-danger');
+                        }
+                        validateQuickEmp();
+                    });
+            }, 400);
+        });
+
+        function validateQuickEmp() {
+            const full = $('#quickFullName').val()?.toString().trim();
+            const user = $('#quickUsername').val()?.toString().trim();
+            const dept = $('#quickEmpModal select[name=departmentId]').val();
+            const role = $('#quickEmpModal select[name=userRole]').val();
+            const pwd = $('#quickEmpModal input[name=password]').val();
+            const usernameTaken = $('#quickUserMsg').hasClass('text-danger');
+            const usernameOk = $('#quickUserMsg').hasClass('text-success');
+            const basicFilled = !!full && !!user && !!dept && !!role && !!pwd;
+            const ok = basicFilled && usernameOk && !usernameTaken;
+            $('#quickEmpSaveBtn').prop('disabled', !ok);
+        }
+
+        $('#quickEmpForm').submit(function (e) {
+            e.preventDefault();
+            const btn = $('#quickEmpSaveBtn');
+            btn.prop('disabled', true);
+            fetch('@Url.Action("AddEmployee")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': csrf
+                },
+                body: $(this).serialize()
+            })
+                .then(r => r.json())
+                .then(j => {
+                    if (j.ok) {
+                        Swal.fire('Başarılı', 'Yeni çalışan eklendi.', 'success');
+                        $('#quickEmpModal').modal('hide');
+                        $('#quickEmpForm')[0].reset();
+                        $('#quickUserMsg').text('').removeClass('text-danger text-success');
+                        btn.prop('disabled', true);
+                        setTimeout(() => location.reload(), 400);
+                    } else {
+                        Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
+                    }
+                })
+                .catch(() => {
+                    Swal.fire('Hata', 'İşlem başarısız oldu.', 'error');
+                })
+                .finally(() => btn.prop('disabled', false));
+        });
+
+        $('#quickEmpModal').on('hidden.bs.modal', () => {
+            $('#quickEmpForm')[0].reset();
+            $('#quickUserMsg').text('').removeClass('text-danger text-success');
+            $('#quickEmpSaveBtn').prop('disabled', true);
+        });
+
+        /* Yeni departman */
+        $('#quickDeptName').on('input', function () {
+            this.value = this.value.toLowerCase()
+                .replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+            $('#quickDeptSaveBtn').prop('disabled', !this.value.trim());
+        });
+
+        $('#quickDeptForm').submit(function (e) {
+            e.preventDefault();
+            ajaxForm($(this), (res) => {
+                Swal.fire('Başarılı', 'Yeni departman eklendi.', 'success');
+                $('#quickDeptModal').modal('hide');
+                $('#quickDeptForm')[0].reset();
+                $('#quickDeptSaveBtn').prop('disabled', true);
+                setTimeout(() => location.reload(), 500);
+            });
+        });
+
+        /* Yeni izin türü */
+        $('#typeName').on('input', function () {
+            this.value = this.value.toLowerCase()
+                .replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+            $('#typeSaveBtn').prop('disabled', !this.value.trim());
+            $('#typeMsg').text('').removeClass('text-danger');
+        });
+
+        $('#typeForm').submit(function (e) {
+            e.preventDefault();
+            ajaxForm($(this), (res) => {
+                Swal.fire('Başarılı', 'Yeni izin türü eklendi.', 'success');
+                $('#typeModal').modal('hide');
+                $('#typeForm')[0].reset();
+                $('#typeMsg').text('').removeClass('text-danger');
+                $('#typeSaveBtn').prop('disabled', true);
+            });
+        });
+
+        /* Yıllık limit */
+        $('#limitForm').submit(function (e) {
+            e.preventDefault();
+            const btn = $(this).find('button[type=submit]');
+            btn.prop('disabled', true);
+            fetch('@Url.Action("SetAnnualLimit")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': csrf
+                },
+                body: $(this).serialize()
+            })
+                .then(() => {
+                    $('#limitModal').modal('hide');
+                    Swal.fire('Başarılı', 'Yıllık izin limiti güncellendi.', 'success');
+                    $('#limitForm')[0].reset();
+                })
+                .finally(() => btn.prop('disabled', false));
+        });
+
+        /* Responsive adjustment */
+        function dtAdjustAll() {
+            $.fn.dataTable.tables({ visible: true, api: true })
+                .columns.adjust()
+                .draw(false);
+        }
+        window.addEventListener('resize', dtAdjustAll);
+        const burger = document.getElementById('sidebarToggle');
+        if (burger) {
+            burger.addEventListener('click', () => {
+                const bpLg = window.matchMedia('(min-width:992px)').matches;
+                document.body.classList.toggle(bpLg ? 'sidebar-collapsed' : 'sidebar-open');
+                setTimeout(dtAdjustAll, 310);
+            });
+        }
+    </script>
+}

@@ -1,0 +1,152 @@
+﻿@model IEnumerable<IzinTakipPaneli.Models.Department>
+@{
+    ViewData["Title"] = "Departmanlar";
+}
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<h4 class="mb-3">Departmanlar</h4>
+
+<div class="table-responsive">
+<table id="deptTable" class="table table-sm table-striped align-middle" style="min-width:620px">
+  <thead>
+      <tr>
+          <th style="width:55px"></th>
+          <th>Departman Adı</th>
+          <th>Oluşturulma Tarihi</th>
+      </tr>
+      </thead>
+  <tbody>
+            @foreach (var d in Model)
+            {
+             <tr>
+               <td><button class="btn-del p-0" data-id="@d.DepartmentID" data-name="@d.DepartmentName">
+                   <i class="bi bi-trash-fill fs-5 text-danger"></i></button></td>
+               <td>@d.DepartmentName</td>
+               <td>@(d.CreatedAt?.ToString("dd.MM.yyyy") ?? "")</td>
+             </tr>
+            }
+  </tbody>
+</table>
+</div>
+
+<button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addDeptModal">
+  <i class="bi bi-plus-circle me-1"></i> Yeni Departman
+</button>
+
+<div class="modal fade" id="addDeptModal" tabindex="-1">
+ <div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header header-blue"><h5 class="modal-title">Yeni Departman</h5>
+   <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+
+  <form id="deptForm" asp-action="AddDept" method="post">@Html.AntiForgeryToken()
+   <div class="modal-body">
+     <label class="form-label">Departman Adı</label>
+     <input id="deptName" name="name" class="form-control" required>
+   </div>
+   <div class="modal-footer"><button class="btn btn-primary" type="submit" disabled>Kaydet</button></div>
+  </form>
+ </div></div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script>
+        $(function () {
+
+            /* tabloyu başlat, butonları ekle */
+            $('#deptTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, 'Hepsi']],
+                language: {
+                    lengthMenu: '_MENU_ kayıt göster',
+                    search: 'Ara:',
+                    info: '_TOTAL_ kayıttan _START_-_END_'
+                },
+                dom: 'Bfrtip',
+                buttons: [
+                    'pageLength',
+                    { extend: 'excel', className: 'btn btn-secondary btn-sm' },
+                    { extend: 'pdf', className: 'btn btn-secondary btn-sm', exportOptions: { columns: [1, 2] } },
+                    { extend: 'print', className: 'btn btn-secondary btn-sm' }
+                ]
+            });
+
+            /* Sil butonuna tıklanınca SweetAlert onayı + form ile POST */
+            $(document).on('click', '.btn-del', e => {
+                e.preventDefault();
+                const id = $(e.currentTarget).data('id'),
+                        name = $(e.currentTarget).data('name');
+
+                Swal.fire({
+                    title: name,
+                    text: 'Silmek istiyor musunuz?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Evet, sil',
+                    cancelButtonText: 'İptal'
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        $('<form>', { method: 'post', action: '@Url.Action("DeleteDept")' })
+                            .append($('<input>', { type: 'hidden', name: 'id', value: id }))
+                            .appendTo('body')
+                            .submit();
+                    }
+                });
+            });
+
+            /* Modal kapatılınca formu ve buton durumunu sıfırla */
+            $('#addDeptModal').on('hidden.bs.modal', () => {
+                $('#deptForm')[0].reset();
+                $('#deptForm button').prop('disabled', true);
+            });
+
+            /* Departman adını Title-Case’e çevir ve butonu aktif et */
+            $('#deptName').on('input', function () {
+                this.value = this.value.toLowerCase()
+                                        .replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+                $('#deptForm button').prop('disabled', !this.value.trim());
+            });
+
+            /* Yeni departman ekle – AJAX POST, başarılıysa hoş mesaj + yenileme */
+            $('#deptForm').submit(function (e) {
+                e.preventDefault();
+                const btn = $(this).find('button').prop('disabled', true);
+
+                fetch('@Url.Action("AddDept")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: $(this).serialize()
+                })
+                    .then(r => r.json())
+                    .then(j => {
+                        if (j.ok) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Başarılı',
+                                text: 'Yeni departman eklendi.'
+                            });
+                            $('#addDeptModal').modal('hide');
+                            $('#deptForm')[0].reset();
+                            $('#addDeptModal').text('').removeClass('text-danger text-success');
+                            setTimeout(() => location.reload(), 400);
+                        } else {
+                            Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
+                        }
+                    })
+                    .finally(() => btn.prop('disabled', false));
+            });
+        });
+    </script>
+}

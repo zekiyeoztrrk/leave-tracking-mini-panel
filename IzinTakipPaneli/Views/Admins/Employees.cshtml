@@ -1,0 +1,260 @@
+﻿@model IEnumerable<dynamic>
+@{
+    ViewData["Title"] = "Çalışanlar";
+    var depts = (IEnumerable<IzinTakipPaneli.Models.Department>)ViewBag.Departments;
+}
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<h4 class="mb-3">Çalışanlar</h4>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <select name="deptId" class="form-select">
+            <option value="">Tüm Departmanlar</option>
+            @foreach (var d in depts)
+            {
+                    <option value="@d.DepartmentID">@d.DepartmentName</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-primary">Uygula</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table id="empTable" class="table table-sm table-striped align-middle" style="min-width:960px">
+        <thead>
+            <tr>
+                <th style="width:55px"></th>
+                <th>Ad Soyad</th>
+                <th>Departman</th>
+                <th>Kullanıcı Adı</th>
+                <th>Kullanılan İzin (Gün)</th>
+                <th>Kalan Yıllık İzin (Gün)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var e in Model)
+            {
+                    <tr>
+                        <td>
+                            <button class="btn-delete p-0"
+                                    data-id="@e.EmployeeID"
+                                    data-name="@e.FullName">
+                                <i class="bi bi-trash-fill fs-5 text-danger"></i>
+                            </button>
+                        </td>
+                        <td>@e.FullName</td>
+                        <td>@e.Dept</td>
+                        <td>@e.Username</td>
+                        <td>@e.UsedDays</td>
+                        <td>@e.Remaining</td>
+                    </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<button class="btn btn-primary mt-2"
+        data-bs-toggle="modal"
+        data-bs-target="#addEmpModal">
+    <i class="bi bi-plus-circle me-1"></i> Yeni Çalışan
+</button>
+
+<!-- ekle modalı -->
+<div class="modal fade" id="addEmpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header header-blue">
+                <h5 class="modal-title">Yeni Çalışan</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form id="empForm" asp-action="AddEmployee" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="form-label">Ad Soyad</label>
+                        <input id="fullName" name="fullName" class="form-control" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Departman</label>
+                        <select name="departmentId" class="form-select" required>
+                            <option value="" disabled selected>Seçiniz..</option>
+                            @foreach (var d in depts)
+                            {
+                                    <option value="@d.DepartmentID">@d.DepartmentName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Rol</label>
+                        <select name="userRole" class="form-select" required>
+                            <option value="" disabled selected>Seçiniz..</option>
+                            <option value="admin">admin</option>
+                            <option value="user">user</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Kullanıcı Adı</label>
+                        <input id="username" name="username" class="form-control" required>
+                        <div id="userMsg" class="small mt-1"></div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Şifre</label>
+                        <input name="password" type="password" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" type="submit" disabled>Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script>
+        $(function () {
+
+            /* Çalışan tablosunu başlat ── */
+            $('#empTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, 'Hepsi']],
+                language: {
+                    lengthMenu: '_MENU_ kayıt göster',
+                    search: 'Ara:',
+                    info: '_TOTAL_ kayıttan _START_-_END_'
+                },
+                dom: 'Bfrtip',
+                buttons: [
+                    'pageLength',
+                    { extend: 'excel', className: 'btn btn-secondary btn-sm' },
+                    { extend: 'pdf',   className: 'btn btn-secondary btn-sm', exportOptions: { columns: [1, 2, 3, 4, 5] } },
+                    { extend: 'print', className: 'btn btn-secondary btn-sm' }
+                ]
+            });
+
+            /* Sil butonu: SweetAlert onayı + POST formu */
+            $(document).on('click', '.btn-delete', function (e) {
+                e.preventDefault();
+                const id   = $(this).data('id'),
+                        name = $(this).data('name');
+
+                Swal.fire({
+                    title: name,
+                    text: 'Silmek istiyor musunuz?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Evet, sil',
+                    cancelButtonText: 'İptal'
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        $('<form>', { method: 'post', action: '@Url.Action("DeleteEmployee")' })
+                            .append($('<input>', { type: 'hidden', name: 'id', value: id }))
+                            .appendTo('body')
+                            .submit();
+                    }
+                });
+            });
+
+            /* Modal kapatıldığında formu sıfırla */
+            $('#addEmpModal').on('hidden.bs.modal', () => {
+                $('#empForm')[0].reset();
+                $('#userMsg').text('');
+                $('#empForm button[type=submit]').prop('disabled', true);
+            });
+
+            /* Ad-Soyad kutusunu anında titlecase çevir ── */
+            $('#fullName').on('input', function () {
+                this.value = this.value
+                                .toLowerCase()
+                                .replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+            });
+
+            /* Kullanıcı adı filtre + sunucu tarafı eşsizlik kontrolü */
+            let timer;
+            $('#username').on('input', function () {
+                this.value = this.value
+                                .toLowerCase()
+                                .replace(/[^\x00-\x7F]/g, '')   // Türkçe karakterleri sil
+                                .replace(/\s+/g, '');          // boşluk kaldır
+                clearTimeout(timer);
+
+                const v   = this.value,
+                        info = $('#userMsg'),
+                        btn  = $('#empForm button[type=submit]');
+
+                if (!v) { info.text(''); btn.prop('disabled', true); return; }
+
+                timer = setTimeout(() => {
+                    fetch('@Url.Action("CheckUsername")?username=' + encodeURIComponent(v))
+                        .then(r => r.json())
+                        .then(j => {
+                            if (j.exists) {
+                                info.text('Bu kullanıcı adı alınmış.')
+                                    .addClass('text-danger')
+                                    .removeClass('text-success');
+                                btn.prop('disabled', true);
+                            } else {
+                                info.text('Kullanılabilir.')
+                                    .addClass('text-success')
+                                    .removeClass('text-danger');
+                                btn.prop('disabled', false);
+                            }
+                        });
+                }, 400);
+            });
+
+            /* Yeni çalışan ekle: formu AJAX ile gönder */
+            $('#empForm').submit(function (e) {
+                e.preventDefault();
+                const btn = $(this).find('button').prop('disabled', true);
+
+                fetch('@Url.Action("AddEmployee")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: $(this).serialize()
+                })
+                .then(r => r.json())
+                .then(j => {
+                    if (j.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı',
+                            text: 'Yeni çalışan eklendi.'
+                        });
+                        $('#addEmpModal').modal('hide');
+                        $('#addEmpModal')[0].reset();
+                        $('#addEmpModal').text('').removeClass('text-danger text-success');
+                        setTimeout(() => location.reload(), 400);
+                    } else {
+                        Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
+                    }
+                })
+                .finally(() => btn.prop('disabled', false));
+            });
+
+        });
+    </script>
+}
+
+

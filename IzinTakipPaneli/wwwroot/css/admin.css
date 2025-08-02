@@ -1,0 +1,144 @@
+﻿/*  ADMİN SAYFASI */
+:root {
+    --admin-blue: #003366; 
+    --admin-blue-dark: #00264d; 
+    --sidebar-w: 260px; 
+}
+
+/* Header */
+.admin-header {
+    background: var(--admin-blue);
+    height: 56px; 
+    position: fixed;
+    inset: 0 0 auto 0; 
+    z-index: 1040; 
+}
+
+    /* Çıkış butonu */
+    .admin-header .btn-logout {
+        background: #fff;
+        color: var(--admin-blue);
+        border: 0;
+    }
+
+        .admin-header .btn-logout:hover {
+            background: #e9eff6; 
+        }
+
+/* Sidebar */
+.admin-sidebar {
+    background: var(--admin-blue);
+    width: var(--sidebar-w);
+    height: 100%;
+    position: fixed;
+    top: 56px; 
+    left: 0; 
+    padding-top: 1rem;
+    overflow-y: auto;
+    transition: left .3s ease; 
+    z-index: 1030;
+}
+
+/* Menü linkleri */
+.nav-link {
+    color: #fff;
+    padding: .85rem 1.5rem;
+}
+
+    .nav-link:hover,
+    .nav-link.active {
+        background: var(--admin-blue-dark);
+        color: #fff;
+        font-weight: 600;
+    }
+
+/* RESPONSIVE DAVRANIŞ */
+
+/*  Mobil & Tablet */
+@media (max-width: 991.98px) {
+
+    /* Sidebar varsayılan olarak kapalı */
+    .admin-sidebar {
+        left: -100%;
+    }
+
+    /* Burger tıklandığında body.sidebar-open sınıfı ekleniyor */
+    body.sidebar-open .admin-sidebar {
+        left: 0;
+    }
+
+    /* İçerik sadece header’ın altında kalacak */
+    .admin-content {
+        margin-top: 64px;
+        padding: 0 1rem;
+    }
+}
+
+/*  Masaüstü  ( ≥ 992px ) */
+@media (min-width: 992px) {
+
+    /* Burger ile body.sidebar-collapsed eklenirse menü gizlenir */
+    body.sidebar-collapsed .admin-sidebar {
+        left: -100%;
+    }
+
+    .admin-content {
+        margin-top: 64px; 
+        margin-left: var(--sidebar-w); 
+        padding: 0 1rem;
+        transition: margin-left .3s ease; 
+    }
+
+    body.sidebar-collapsed .admin-content {
+        margin-left: 0;
+    }
+}
+
+/* TABLO */
+
+/* Zebra deseni – okunabilirlik */
+table.dataTable > tbody > tr:nth-child(even) {
+    background: #f8fbff;
+}
+
+/* Silme butonu */
+.btn-delete {
+    background: none;
+    border: 0;
+}
+
+.btn-del  {
+    background: none;
+    border: 0
+}
+
+/* Filtre etiketlerini daralt */
+.input-group-text {
+    font-size: .75rem; 
+    min-width: 80px; 
+}
+
+/* Sidebar kapanınca içerik tam alanı kaplar*/
+@media (min-width: 992px) {
+    .admin-content {
+        width: calc(100% - var(--sidebar-w));
+        transition: width .3s ease;
+    }
+
+    body.sidebar-collapsed .admin-content {
+        width: 100%;
+    }
+}
+
+/* Yatay scroolu kapa */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Tabo boy genişlik sorunu */
+.dataTables_scrollHead table,
+.dataTables_scrollBody table {
+    width: 100% !important; /* Başlık & gövde aynı genişlikte */
+    table-layout: fixed; /* Hücreler orantılı daralır/genişler */
+}
