@@ -1,4 +1,4 @@
-﻿@model IEnumerable<IzinTakipPaneli.Models.Department>
+@model IEnumerable<IzinTakipPaneli.Models.Department>
 @{
     ViewData["Title"] = "Departmanlar";
 }
@@ -119,7 +119,7 @@
                 $('#deptForm button').prop('disabled', !this.value.trim());
             });
 
-            /* Yeni departman ekle – AJAX POST, başarılıysa hoş mesaj + yenileme */
+            /* Yeni departman ekle – AJAX POST */
             $('#deptForm').submit(function (e) {
                 e.preventDefault();
                 const btn = $(this).find('button').prop('disabled', true);
@@ -129,23 +129,34 @@
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: $(this).serialize()
                 })
-                    .then(r => r.json())
-                    .then(j => {
-                        if (j.ok) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Başarılı',
-                                text: 'Yeni departman eklendi.'
-                            });
+                .then(res => {
+                    if (!res.ok) return res.text().then(t => { throw new Error(t || 'HTTP ' + res.status); });
+                    return res.json();
+                })
+                .then(j => {
+                    if (j.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı',
+                            text: 'Yeni departman eklendi.',
+                            confirmButtonText: 'Tamam',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false
+                        }).then(() => {
                             $('#addDeptModal').modal('hide');
                             $('#deptForm')[0].reset();
-                            $('#addDeptModal').text('').removeClass('text-danger text-success');
-                            setTimeout(() => location.reload(), 400);
-                        } else {
-                            Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
-                        }
-                    })
-                    .finally(() => btn.prop('disabled', false));
+                            $('#deptForm button').prop('disabled', true);
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Hata', 'İşlem başarısız oldu.'); 
+                    console.error('AddDept error:', err);
+                })
+                .finally(() => btn.prop('disabled', false));
             });
         });
     </script>
