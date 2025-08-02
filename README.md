@@ -56,6 +56,38 @@ A lightweight panel for employees to request leaves, monitor annual leave balanc
 
 6. **(Optional) Use the provided test backup:**  
    Restore the `.bak` file and update the connection string to point to the test database.
+   
+7. **(Optional)Populate with example data:**
+Run the following script in SQL Server (e.g., via SSMS) to insert sample departments, users, settings, and leave types:
+  ```
+   -- 1. Add department
+   INSERT INTO Departments (DepartmentName, IsActive, CreatedAt)
+   VALUES 
+   ('Software', 1, GETDATE()),
+   ('Human Resources', 1, GETDATE()),
+   ('Accounting', 1, GETDATE());
+   
+   -- 2. Add employee
+   INSERT INTO Employees (FullName, DepartmentID, UserRole, IsActive, Username, Password, CreatedAt)
+   VALUES ('admin', 1, 'admin', 1, 'admin', '1', GETDATE());
+   
+   INSERT INTO Employees (FullName, DepartmentID, UserRole, IsActive, Username, Password, CreatedAt)
+   VALUES ('user', 1, 'user', 1, 'user', '1', GETDATE());
+   
+   INSERT INTO Employees (FullName, DepartmentID, UserRole, IsActive, Username, Password, CreatedAt)
+   VALUES ('Merve Arslan', 1, 'user', 1, 'merve.arslan', '1', GETDATE());
+   
+   -- 3. Add annual leave count to the settings table
+   INSERT INTO Settings (MaxAnnualLeaveDays, IsActive, CreatedAt)
+   VALUES (20, 1, GETDATE());
+   
+   -- 4. Add leave types
+   INSERT INTO LeaveTypes (LeaveTypeName, IsActive, CreatedAt)
+   VALUES 
+   ('Anual', 1, GETDATE()),
+   ('Unpaid', 1, GETDATE()),
+   ('Illness', 1, GETDATE());
+  ```
 
 ### Test Backup (.bak)
 
@@ -134,6 +166,38 @@ Then update the connection string:
 
 6. **(İsteğe bağlı) Sağlanan test yedeğini kullan:**  
    `.bak` dosyasını geri yükleyin ve bağlantı dizesini test veritabanına göre güncelleyin.
+   
+7. **(İsteğe bağlı)Örnek verilerle doldurma:**
+Aşağıdaki script’i SQL Server’da çalıştırarak temel departmanları, kullanıcıları, ayarları ve izin türlerini ekleyebilirsiniz:
+```
+   -- 1. Departman ekle
+   INSERT INTO Departments (DepartmentName, IsActive, CreatedAt)
+   VALUES 
+   ('Yazılım', 1, GETDATE()),
+   ('İnsan Kaynakları', 1, GETDATE()),
+   ('Muhasebe', 1, GETDATE());
+   
+   -- 2. Kullanıcı ekle
+   INSERT INTO Employees (FullName, DepartmentID, UserRole, IsActive, Username, Password, CreatedAt)
+   VALUES ('admin', 1, 'admin', 1, 'admin', '1', GETDATE());
+   
+   INSERT INTO Employees (FullName, DepartmentID, UserRole, IsActive, Username, Password, CreatedAt)
+   VALUES ('user', 1, 'user', 1, 'user', '1', GETDATE());
+   
+   INSERT INTO Employees (FullName, DepartmentID, UserRole, IsActive, Username, Password, CreatedAt)
+   VALUES ('Merve Arslan', 1, 'user', 1, 'merve.arslan', '1', GETDATE());
+   
+   -- 3. Ayarlar tablosuna yıllık izin sayısını ekle
+   INSERT INTO Settings (MaxAnnualLeaveDays, IsActive, CreatedAt)
+   VALUES (20, 1, GETDATE());
+   
+   -- 4. İzin türlerini ekle
+   INSERT INTO LeaveTypes (LeaveTypeName, IsActive, CreatedAt)
+   VALUES 
+   ('Yıllık', 1, GETDATE()),
+   ('Ücretsiz', 1, GETDATE()),
+   ('Hastalık', 1, GETDATE());
+```
 
 ### Test Yedeği (.bak)
 
