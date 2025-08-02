@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Admin Paneli • Genel Durum";
     var depts = (IEnumerable<IzinTakipPaneli.Models.Department>)ViewBag.Departments;
 }
@@ -350,12 +350,13 @@
                 .then(r => r.json())
                 .then(j => {
                     if (j.ok) {
-                        Swal.fire('Başarılı', 'Yeni çalışan eklendi.', 'success');
-                        $('#quickEmpModal').modal('hide');
-                        $('#quickEmpForm')[0].reset();
-                        $('#quickUserMsg').text('').removeClass('text-danger text-success');
-                        btn.prop('disabled', true);
-                        setTimeout(() => location.reload(), 400);
+                        Swal.fire('Başarılı', 'Yeni çalışan eklendi.', 'success').then(() => {
+                            $('#quickEmpModal').modal('hide');
+                            $('#quickEmpForm')[0].reset();
+                            $('#quickUserMsg').text('').removeClass('text-danger text-success');
+                            btn.prop('disabled', true);
+                            setTimeout(() => location.reload(), 400);
+                        });                      
                     } else {
                         Swal.fire('Hata', j.message || 'Bir hata oluştu.', 'error');
                     }
@@ -365,12 +366,27 @@
                 })
                 .finally(() => btn.prop('disabled', false));
         });
-
+            
+        // Modal kapanmadan önce verileri sıfırla
         $('#quickEmpModal').on('hidden.bs.modal', () => {
             $('#quickEmpForm')[0].reset();
             $('#quickUserMsg').text('').removeClass('text-danger text-success');
             $('#quickEmpSaveBtn').prop('disabled', true);
         });
+        $('#quickDeptModal').on('hidden.bs.modal', function () {
+            $('#quickDeptForm')[0].reset();
+            $('#quickDeptSaveBtn').prop('disabled', true);
+        });
+
+        $('#typeModal').on('hidden.bs.modal', function () {
+            $('#typeForm')[0].reset();
+            $('#typeSaveBtn').prop('disabled', true);
+        });
+
+        $('#limitModal').on('hidden.bs.modal', function () {
+            $('#limitForm')[0].reset();
+        });
+
 
         /* Yeni departman */
         $('#quickDeptName').on('input', function () {
@@ -382,11 +398,12 @@
         $('#quickDeptForm').submit(function (e) {
             e.preventDefault();
             ajaxForm($(this), (res) => {
-                Swal.fire('Başarılı', 'Yeni departman eklendi.', 'success');
-                $('#quickDeptModal').modal('hide');
-                $('#quickDeptForm')[0].reset();
-                $('#quickDeptSaveBtn').prop('disabled', true);
-                setTimeout(() => location.reload(), 500);
+                Swal.fire('Başarılı', 'Yeni departman eklendi.', 'success').then(() => {
+                    $('#quickDeptModal').modal('hide');
+                    $('#quickDeptForm')[0].reset();
+                    $('#quickDeptSaveBtn').prop('disabled', true);
+                    setTimeout(() => location.reload(), 500);
+                });             
             });
         });
 
@@ -422,12 +439,13 @@
                 },
                 body: $(this).serialize()
             })
-                .then(() => {
-                    $('#limitModal').modal('hide');
-                    Swal.fire('Başarılı', 'Yıllık izin limiti güncellendi.', 'success');
-                    $('#limitForm')[0].reset();
-                })
-                .finally(() => btn.prop('disabled', false));
+            .then(() => {
+                $('#limitModal').modal('hide');
+                Swal.fire('Başarılı', 'Yıllık izin limiti güncellendi.', 'success');
+                $('#limitForm')[0].reset();
+                todayTbl.ajax.reload(); // Tabloyu yenile
+            })
+            .finally(() => btn.prop('disabled', false));
         });
 
         /* Responsive adjustment */
