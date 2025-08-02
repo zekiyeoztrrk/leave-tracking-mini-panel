@@ -34,7 +34,7 @@ A lightweight panel for employees to request leaves, monitor annual leave balanc
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB;Trusted_Connection=True;"
+       "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB;Trusted_Connection=True;TrustServerCertificate=True;"
      }
    }
    ```
@@ -104,7 +104,7 @@ Then update the connection string:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB_Test;Trusted_Connection=True;"
+    "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB_Test;Trusted_Connection=True;TrustServerCertificate=True;"
   }
 }
 ```
@@ -144,7 +144,7 @@ Then update the connection string:
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB;Trusted_Connection=True;"
+       "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB;Trusted_Connection=True;TrustServerCertificate=True;"
      }
    }
    ```
@@ -213,7 +213,7 @@ Ardından bağlantı dizesini güncelleyin:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB_Test;Trusted_Connection=True;"
+    "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LeaveManagementDB_Test;Trusted_Connection=True;TrustServerCertificate=True;"
   }
 }
 ```
